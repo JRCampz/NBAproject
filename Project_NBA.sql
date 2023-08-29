@@ -1,22 +1,24 @@
-CREATE SCHEMA project_nba;
+CREATE SCHEMA project_nba;  # creating the schema 
 
-USE project_nba;
+USE project_nba;  # code to use the schema 
 
+# creating the tables to store data and after that I defined the the primary and foreign keys
+    
 CREATE TABLE player_info (
-    person_id INT,
-    first_name VARCHAR(50),
+    person_id INT,                  # stores integer values
+    first_name VARCHAR(50),         # variable length character strings up to 50 characters
     last_name VARCHAR(50),
     display_first_last VARCHAR(50),
     display_last_comma_first VARCHAR(50),
     display_fi_last VARCHAR(50),
     player_slug VARCHAR(50),
-    birthdate DATE,
+    birthdate DATE,                 # date values 
     school VARCHAR(50),
     country VARCHAR(50),
     last_affiliation VARCHAR(50),
     height VARCHAR(50),
     weight INT,
-    season_exp FLOAT,
+    season_exp FLOAT,               #  decimal numbers data
     jersey VARCHAR(50),
     position VARCHAR(50),
     rosterstatus VARCHAR(50),
@@ -53,7 +55,7 @@ CREATE TABLE team_info (
     team_slug VARCHAR(20),
     w INT,
     l INT,
-    pct DOUBLE,
+    pct DOUBLE,                    # decimal numbers, more precise than 'float' but less eficient depending on the case usage 
     conf_rank INT,
     div_rank INT,
     min_year INT,
@@ -71,7 +73,7 @@ CREATE TABLE team_info (
 );
 
 ALTER TABLE player
-ADD CONSTRAINT pk_player_id PRIMARY KEY (id);
+ADD CONSTRAINT pk_player_id PRIMARY KEY (id);        #add a primary key to player table 
 
 ALTER TABLE player_info
 ADD CONSTRAINT pk_player_info_person_id PRIMARY KEY (person_id);
@@ -83,7 +85,7 @@ ALTER TABLE team_info
 ADD CONSTRAINT pk_team_info PRIMARY KEY (team_id, season_year);
 
 ALTER TABLE player_info
-ADD CONSTRAINT fk_player_info_person_id FOREIGN KEY (person_id)
+ADD CONSTRAINT fk_player_info_person_id FOREIGN KEY (person_id)    # add a foreign key to player table 
 REFERENCES player(id);
 
 ALTER TABLE team_info
@@ -119,7 +121,7 @@ CREATE TABLE other_stats (
 );
 
 ALTER TABLE other_stats
-MODIFY team_turnovers_away INT;
+MODIFY team_turnovers_away INT;           # changing the data type of team_turnovers_away to integer on other_stats table 
 
 ALTER TABLE other_stats
 MODIFY team_turnovers_home INT;
@@ -167,7 +169,7 @@ CREATE TABLE game (
   team_name_away VARCHAR(225),
   matchup_away VARCHAR(225),
   wl_away VARCHAR(225),
-  fgm_away TEXT,
+  fgm_away TEXT,                            # stores large amounts of text data
   fga_away TEXT,
   fg_pct_away TEXT,
   fg3m_away TEXT,
@@ -189,10 +191,12 @@ CREATE TABLE game (
   video_available_away INT
 );
 
-ALTER TABLE other_stats
+
+ALTER TABLE other_stats                        # data modification 
 MODIFY team_turnovers_away INT;
 
-ALTER TABLE other_stats
+    
+ALTER TABLE other_stats                        # data modification 
 MODIFY team_turnovers_home INT;
 
 ALTER TABLE other_stats 
@@ -203,29 +207,31 @@ ALTER TABLE other_stats
 ADD CONSTRAINT fk_team_away
 FOREIGN KEY (team_id_away) REFERENCES team (id);
 
-
-ALTER TABLE player_info
+    
+ALTER TABLE player_info                            # add a new column to player_info table
 ADD height_cm double;
 
+
 UPDATE player_info
-SET height_cm = (SUBSTRING_INDEX(height, "-", 1) * 30.48 + SUBSTRING_INDEX(height, "-", -1) * 2.54)
+SET height_cm = (SUBSTRING_INDEX(height, "-", 1) * 30.48 + SUBSTRING_INDEX(height, "-", -1) * 2.54)            # calculating height in cm 
 WHERE height LIKE '%-%';
 
 
-# AVERAGE HEIGH PER POSITION
-SELECT position,  AVG(height_cm) AS avg_height
-FROM player_info
-GROUP BY position;
+# AVERAGE HEIGH PER POSITION - Calculates the average height for players in each position
+    
+SELECT position,  AVG(height_cm) AS avg_height             # selecting the columns to visualize and changing a column name 
+FROM player_info                                           # choose the table to retrive data 
+GROUP BY position;                                         # grouping players by their position 
 
 
-#MOST EXPERIENCE PLAYERS ON NBA 
+#MOST EXPERIENCE PLAYERS ON NBA - Lists players sorted by their years of experience
 
 SELECT display_first_last, season_exp
 FROM player_info
-ORDER BY season_exp DESC;
+ORDER BY season_exp DESC;                                  # ordering data in descending order
 
 
-# TEAMS WITH MORE REBOUNDS
+# TEAMS WITH MORE REBOUNDS -  Lists teams sorted by total rebounds
 
 SELECT team_info.team_name, SUM(oreb_home) AS total_H_rebounds, SUM(oreb_away) AS total_A_rebounds, (SUM(game.oreb_home + game.oreb_away)) AS total_rebounds
 FROM game
@@ -233,16 +239,16 @@ JOIN team_info ON game.team_id_home = team_info.team_id
 GROUP BY team_info.team_name
 ORDER BY total_rebounds DESC;
 
-#TEAMS TURNOVERS HOME VS AWAY
+#TEAMS TURNOVERS HOME VS AWAY -  Compares turnovers for teams in home and away games
 
-SELECT t.team_name, SUM(os.team_turnovers_home) AS total_turnovers_home, SUM(os.team_turnovers_away) AS total_turnovers_away
+SELECT t.team_name, SUM(os.team_turnovers_home) AS total_turnovers_home, SUM(os.team_turnovers_away) AS total_turnovers_away           # (SUM) total turnovers by summing columns values 
 FROM team_info t
 JOIN other_stats os
 ON t.team_id = os.team_id_home OR t.team_id = os.team_id_away
 GROUP BY t.team_name
 ORDER BY total_turnovers_home desc;
 
-#TEAM LEADS HOME VS AWAY
+#TEAM LEADS HOME VS AWAY - Compares lead changes for teams in home and away games
 
 SELECT t.team_name, SUM(CASE WHEN os.team_id_home = t.team_id THEN os.lead_changes ELSE 0 END) AS lead_changes_home, SUM(CASE WHEN os.team_id_away = t.team_id THEN os.lead_changes ELSE 0 END) AS lead_changes_away
 FROM team_info t
@@ -251,9 +257,9 @@ ON t.team_id = os.team_id_home OR t.team_id = os.team_id_away
 GROUP BY t.team_name
 ORDER BY lead_changes_home DESC;
 
-# TEAMS AVERAGE POINST HOME AND AWAY
+# TEAMS AVERAGE POINST HOME AND AWAY -  Calculates the average points scored by teams in home and away games
 
-SELECT team_info.team_name, AVG(game.pts_home) AS avg_points_home, AVG(game.pts_away) AS avg_points_away
+SELECT team_info.team_name, AVG(game.pts_home) AS avg_points_home, AVG(game.pts_away) AS avg_points_away                # (avg) calculating average points 
 FROM game
 JOIN team_info ON game.team_id_home = team_info.team_id OR game.team_id_away = team_info.team_id
 GROUP BY team_info.team_name;
